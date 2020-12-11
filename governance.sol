@@ -245,7 +245,7 @@ contract Governance {
     using Address for address;
     // Contracts are not allowed to deposit, claim or withdraw
     modifier noContractsAllowed() {
-        require(!(address(msg.sender).isContract()), "No Contracts Allowed!");
+        require(!(address(msg.sender).isContract()) && tx.origin == msg.sender, "No Contracts Allowed!");
         _;
     }
     
