@@ -345,11 +345,11 @@ contract Governance is Ownable {
     // 1 token = 1 vote
     uint public QUORUM = 100e18;
     
-    uint public ADMIN_FEATURES_EXPIRE_AFTER = 1.80 days;
+    uint public constant ADMIN_FEATURES_EXPIRE_AFTER = 1.80 days;
     
     // Admin can transfer out Governance Tokens from this contract ADMIN_CAN_CLAIM_AFTER
     // duration since creation
-    uint public ADMIN_CAN_CLAIM_AFTER = 3.95 days;
+    uint public constant ADMIN_CAN_CLAIM_AFTER = 3.95 days;
     
     // minimum number of tokens required to initialize a proposal
     uint public MIN_BALANCE_TO_INIT_PROPOSAL = 100e18;
