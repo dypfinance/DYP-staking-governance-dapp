@@ -244,39 +244,77 @@ interface StakingPool {
  * functions, this simplifies the implementation of "user permissions".
  */
 contract Ownable {
-  address public owner;
+    address private _owner;
+    address public pendingOwner;
 
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    /**
+     * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+     * account.
+     */
+    constructor () internal {
+        _owner = msg.sender;
+        emit OwnershipTransferred(address(0), _owner);
+    }
 
+    /**
+     * @return the address of the owner.
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
 
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  constructor() public {
-    owner = msg.sender;
-  }
-
-
-  /**
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(isOwner());
+        _;
+    }
+    
+    /**
    * @dev Throws if called by any account other than the owner.
    */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
+    modifier onlyPendingOwner() {
+        assert(msg.sender != address(0));
+        require(msg.sender == pendingOwner);
+        _;
+    }
 
+    /**
+     * @return true if `msg.sender` is the owner of the contract.
+     */
+    function isOwner() public view returns (bool) {
+        return msg.sender == _owner;
+    }
 
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) onlyOwner public {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-  }
+    /**
+    * @dev Allows the current owner to transfer control of the contract to a newOwner.
+    * @param _newOwner The address to transfer ownership to.
+    */
+    function transferOwnership(address _newOwner) public onlyOwner {
+        require(_newOwner != address(0));
+        pendingOwner = _newOwner;
+    }
+  
+    /**
+    * @dev Allows the pendingOwner address to finalize the transfer.
+    */
+    function claimOwnership() onlyPendingOwner public {
+        _transferOwnership(pendingOwner);
+        pendingOwner = address(0);
+    }
+
+    /**
+     * @dev Transfers control of the contract to a newOwner.
+     * @param newOwner The address to transfer ownership to.
+     */
+    function _transferOwnership(address newOwner) internal {
+        require(newOwner != address(0));
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
 }
 
 
