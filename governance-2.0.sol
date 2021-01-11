@@ -1,5 +1,5 @@
-pragma solidity 0.6.11;
 // SPDX-License-Identifier: BSD-3-Clause
+pragma solidity 0.6.11;
 
 /**
  * @title SafeMath
@@ -224,11 +224,9 @@ interface Token {
     function transfer(address, uint) external returns (bool);
 }
 
-
 interface LegacyToken {
     function transfer(address, uint) external;
 }
-
 
 interface StakingPool {
     function disburseRewardTokens() external;
@@ -369,8 +367,11 @@ contract Governance is Ownable {
     event PoolCallReverted(StakingPool, string);
     event PoolCallReverted(StakingPool, bytes);
     
-    constructor() public {
-        contractStartTime = now;
+    enum PoolGroupName {
+        WETH,
+        WBTC,
+        USDT,
+        USDC
     }
     
     enum Action {
@@ -380,10 +381,39 @@ contract Governance is Ownable {
         TEXT_PROPOSAL,
         CHANGE_MIN_BALANCE_TO_INIT_PROPOSAL
     }
+    
     enum Option {
         ONE, // disburse | yes
         TWO // burn | no
     }
+    
+    mapping (PoolGroupName => StakingPool[4]) public hardcodedStakingPools;
+    
+    constructor() public {
+        contractStartTime = now;
+        
+        hardcodedStakingPools[PoolGroupName.WETH][0] = StakingPool(0xf7456C43bf039D28042BDF45115BA37FB77B5fCe);
+        hardcodedStakingPools[PoolGroupName.WETH][1] = StakingPool(0x517A7dd5EBBc4827F158aFf200c97D5B9E5830D9);
+        hardcodedStakingPools[PoolGroupName.WETH][2] = StakingPool(0x5873ee91BdCcd1499dceE3E123a51ceBd033212b);
+        hardcodedStakingPools[PoolGroupName.WETH][3] = StakingPool(0xA69A33c1de12E19B2f11d0fF7160F9Ad57cF02D5);
+        
+        hardcodedStakingPools[PoolGroupName.WBTC][0] = StakingPool(0xeF71DE5Cb40f7985FEb92AA49D8e3E84063Af3BB);
+        hardcodedStakingPools[PoolGroupName.WBTC][1] = StakingPool(0x8B0e324EEdE360CaB670a6AD12940736d74f701e);
+        hardcodedStakingPools[PoolGroupName.WBTC][2] = StakingPool(0x78e2dA2eda6dF49BaE46E3B51528BAF5c106e654);
+        hardcodedStakingPools[PoolGroupName.WBTC][3] = StakingPool(0x350F3fE979bfad4766298713c83b387C2D2D7a7a);
+        
+        hardcodedStakingPools[PoolGroupName.USDT][0] = StakingPool(0x4a76Fc15D3fbf3855127eC5DA8AAf02DE7ca06b3);
+        hardcodedStakingPools[PoolGroupName.USDT][1] = StakingPool(0xF4abc60a08B546fA879508F4261eb4400B55099D);
+        hardcodedStakingPools[PoolGroupName.USDT][2] = StakingPool(0x13F421Aa823f7D90730812a33F8Cac8656E47dfa);
+        hardcodedStakingPools[PoolGroupName.USDT][3] = StakingPool(0x86690BbE7a9683A8bAd4812C2e816fd17bC9715C);
+        
+        hardcodedStakingPools[PoolGroupName.USDC][0] = StakingPool(0x2b5D7a865A3888836d15d69dCCBad682663DCDbb);
+        hardcodedStakingPools[PoolGroupName.USDC][1] = StakingPool(0xa52250f98293c17C894d58cf4f78c925dC8955d0);
+        hardcodedStakingPools[PoolGroupName.USDC][2] = StakingPool(0x924BECC8F4059987E4bc4B741B7C354FF52c25e4);
+        hardcodedStakingPools[PoolGroupName.USDC][3] = StakingPool(0xbE528593781988974D83C2655CBA4c45FC75c033);
+    }
+    
+    
     
     // proposal id => action
     mapping (uint => Action) public actions;
@@ -475,22 +505,33 @@ contract Governance is Ownable {
     
     // Any DYP holder with a minimum required DYP balance may initiate a proposal
     // with the DISBURSE_OR_BURN action for a given staking pool
-    function proposeDisburseOrBurn(StakingPool[] memory pool) external noContractsAllowed {
-        require(pool.length == 4, "Must include 4 pools!");
+    function proposeDisburseOrBurn(PoolGroupName poolGroupName) external noContractsAllowed {
+        require(poolGroupName == PoolGroupName.WETH ||
+                poolGroupName == PoolGroupName.WBTC ||
+                poolGroupName == PoolGroupName.USDT ||
+                poolGroupName == PoolGroupName.USDC, "Invalid Pool Group Name!");
         require(Token(TRUSTED_TOKEN_ADDRESS).balanceOf(msg.sender) >= MIN_BALANCE_TO_INIT_PROPOSAL, "Insufficient Governance Token Balance");
         lastIndex = lastIndex.add(1);
-        stakingPools[lastIndex] = pool;
+        
+        stakingPools[lastIndex] = hardcodedStakingPools[poolGroupName];
+        
         proposalStartTime[lastIndex] = now;
         actions[lastIndex] = Action.DISBURSE_OR_BURN;
     }
     
     // Admin may initiate a proposal
     // with the UPGRADE_GOVERNANCE action for a given staking pool
-    function proposeUpgradeGovernance(StakingPool[] memory pool, address newGovernance) external noContractsAllowed onlyOwner {
-        require(pool.length == 4, "Must include 4 pools!");
+    function proposeUpgradeGovernance(PoolGroupName poolGroupName, address newGovernance) external noContractsAllowed onlyOwner {
+        require(poolGroupName == PoolGroupName.WETH ||
+                poolGroupName == PoolGroupName.WBTC ||
+                poolGroupName == PoolGroupName.USDT ||
+                poolGroupName == PoolGroupName.USDC, "Invalid Pool Group Name!");
+                
         require(Token(TRUSTED_TOKEN_ADDRESS).balanceOf(msg.sender) >= MIN_BALANCE_TO_INIT_PROPOSAL, "Insufficient Governance Token Balance");
         lastIndex = lastIndex.add(1);
-        stakingPools[lastIndex] = pool;
+        
+        stakingPools[lastIndex] = hardcodedStakingPools[poolGroupName];
+        
         newGovernances[lastIndex] = newGovernance;
         proposalStartTime[lastIndex] = now;
         actions[lastIndex] = Action.UPGRADE_GOVERNANCE;
@@ -585,9 +626,9 @@ contract Governance is Ownable {
     // Else losing action is executed
     // Each proposal may be executed only once
     function executeProposal(uint proposalId) external noContractsAllowed {
-        require (isProposalExecutible(proposalId), "Proposal Expired!");
-        require (optionOneVotes[proposalId] != optionTwoVotes[proposalId], "This is a TIE! Cannot execute!");
         require (actions[proposalId] != Action.TEXT_PROPOSAL, "Cannot programmatically execute text proposals");
+        require (optionOneVotes[proposalId] != optionTwoVotes[proposalId], "This is a TIE! Cannot execute!");
+        require (isProposalExecutible(proposalId), "Proposal Expired!");
         
         isProposalExecuted[proposalId] = true;
     
