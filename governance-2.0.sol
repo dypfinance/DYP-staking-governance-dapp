@@ -449,7 +449,7 @@ contract Governance is Ownable {
     // address user => uint proposal id => Option voted for option
     mapping (address => mapping (uint => Option)) public votedForOption;
     
-    // address user => uint proposal id for the latest proposal the user voted on
+    // address user => start time for the latest proposal the user voted on
     mapping (address => uint) public lastVotedProposalStartTime;
     
     // uint last proposal id
